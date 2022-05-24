@@ -10,6 +10,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ImageSharerFinal">
         <activity
+            android:name=".ImageSharerActivity"
+            android:exported="false"
+            android:label="@string/title_activity_image_sharer"
+            android:theme="@style/Theme.ImageSharerFinal.NoActionBar" />
+        <activity
             android:name=".Login.LoginActivity"
             android:exported="false" />
         <activity
