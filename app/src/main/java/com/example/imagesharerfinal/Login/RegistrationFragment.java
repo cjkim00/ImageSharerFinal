@@ -1,25 +1,54 @@
 package com.example.imagesharerfinal.Login;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
+import com.example.imagesharerfinal.ImageSharerActivity;
 import com.example.imagesharerfinal.R;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 
 public class RegistrationFragment extends Fragment {
 
     private FirebaseAuth mAuth;
+
+    private boolean mUsernameExists = false;
 
     EditText email;
     EditText reEnterEmail;
@@ -66,19 +95,125 @@ public class RegistrationFragment extends Fragment {
         register.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //check if email and username is in use
-                //check if email and passwords match
-                //if all checks out then use firebase to store email and passwords
-                //store the user's email and username in the database
-                checkEmail();
-                checkPassword();
-                checkUsername();
+                boolean checkEmail = checkEmail();
+                boolean checkPassword = checkPassword();
+                boolean checkUsername = checkUsername();
+                if(checkEmail && checkPassword && checkUsername) {
+                    //register user with firebase
+                    regisgerWithFirebase();
+                    //send user info into databse
+                    try {
+                        sendUserInfoToDatabase();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    //start image sharing activity
+                    Intent intent = new Intent(getActivity(), ImageSharerActivity.class);
+                    startActivity(intent);
+                }
+
             }
         });
 
-
-
         return view;
+    }
+
+    public void sendUserInfoToDatabase() throws InterruptedException {
+        Uri uri = new Uri.Builder()
+                .scheme("https")
+                .appendPath("cjkim00-image-sharing-app.herokuapp.com")
+                .appendPath("Registration")
+                .build();
+        Thread thread = new Thread(() -> {
+            URL url = null;
+            try {
+                url = new URL(uri.toString());
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            conn.setRequestProperty("Accept","application/json");
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+
+            JSONObject msg = new JSONObject();
+            try {
+                msg.put("Email", email.getText().toString());
+                msg.put("Username", username.getText().toString());
+            } catch (JSONException e) {
+                Log.e("JSON ERROR", e.getMessage());
+            }
+
+            DataOutputStream os = null;
+            try {
+                os = new DataOutputStream(conn.getOutputStream());
+                os.writeBytes(msg.toString());
+                os.flush();
+                os.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            try {
+                int status = conn.getResponseCode();
+
+                if (status == 200) {
+                    BufferedReader bufferedReader =
+                            new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line);
+                    }
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+
+        });
+        thread.start();
+        thread.join();
+    }
+
+    public void regisgerWithFirebase() {
+        String userEmail = email.getText().toString();
+        String userPassword = password.getText().toString();
+
+        mAuth.createUserWithEmailAndPassword(userEmail, userPassword)
+                .addOnCompleteListener(requireActivity(), new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            // Sign in success, update UI with the signed-in user's information
+                            Log.d("CREATION", "createUserWithEmail:success");
+                            Toast.makeText(requireActivity(), "Authentication succeeded.",
+                                    Toast.LENGTH_SHORT).show();
+                            FirebaseUser user = mAuth.getCurrentUser();
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            Log.w("CREATION", "createUserWithEmail:failure", task.getException());
+                            Toast.makeText(requireActivity(), "Authentication failed.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     public boolean checkEmail() {
@@ -138,9 +273,114 @@ public class RegistrationFragment extends Fragment {
         }
 
         //Check if username exists in database
+        try {
+            checkUsernameInDatabase();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        Log.i("READER INFO", "TEST: " + mUsernameExists);
+        if(mUsernameExists) {
+            username.setError("Username already exists");
+        }
 
         return true;
     }
+
+    public void checkUsernameInDatabase() throws InterruptedException {
+        Uri uri = new Uri.Builder()
+                .scheme("https")
+                .appendPath("cjkim00-image-sharing-app.herokuapp.com")
+                .appendPath("check_if_username_exists")
+                .build();
+        Thread thread = new Thread(() -> {
+            URL url = null;
+            try {
+                url = new URL(uri.toString());
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            conn.setRequestProperty("Accept","application/json");
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+
+            JSONObject msg = new JSONObject();
+            try {
+                msg.put("User", username.getText().toString());
+            } catch (JSONException e) {
+                Log.e("JSON ERROR", e.getMessage());
+            }
+
+            DataOutputStream os = null;
+            try {
+                os = new DataOutputStream(conn.getOutputStream());
+                os.writeBytes(msg.toString());
+                os.flush();
+                os.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            try {
+                int status = conn.getResponseCode();
+
+                switch (status) {
+                    case 200:
+                        BufferedReader bufferedReader =
+                                new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+                        StringBuilder stringBuilder = new StringBuilder();
+                        String line;
+                        while((line = bufferedReader.readLine()) != null) {
+                            stringBuilder.append(line);
+                        }
+                        bufferedReader.close();
+                        mUsernameExists = getResults(stringBuilder.toString());
+
+
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+
+        });
+        thread.start();
+        thread.join();
+    }
+
+    public boolean getResults(String results) {
+        try {
+            JSONObject root = new JSONObject(results);
+            if(root.has("success") && root.getBoolean("success")) {
+                JSONArray data = root.getJSONArray("data");
+                JSONObject usernameExists = data.getJSONObject(0);
+                Log.i("READER INFO", "" + usernameExists.getBoolean("exists"));
+
+                return usernameExists.getBoolean("exists");
+            }
+        } catch (JSONException e) {
+
+        }
+        return false;
+    }
+
+
 
     public static boolean isValid(String email) {
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\."+
