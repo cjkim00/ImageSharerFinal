@@ -69,7 +69,7 @@ public class RegistrationFragment extends Fragment {
 
     private boolean mUsernameExists = false;
 
-    EditText email;
+    EditText editTextEmail;
     EditText reEnterEmail;
     EditText username;
     EditText password;
@@ -84,7 +84,7 @@ public class RegistrationFragment extends Fragment {
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if(currentUser != null){
+        if (currentUser != null) {
             currentUser.reload();
         }
     }
@@ -102,7 +102,7 @@ public class RegistrationFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_registration, container, false);
 
-        email = view.findViewById(R.id.edit_text_registration_email);
+        editTextEmail = view.findViewById(R.id.edit_text_registration_email);
         reEnterEmail = view.findViewById(R.id.edit_text_registration_reenter_email);
 
         username = view.findViewById(R.id.edit_text_registration_username);
@@ -114,10 +114,10 @@ public class RegistrationFragment extends Fragment {
         register.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean checkEmail = checkEmail();
-                boolean checkPassword = checkPassword();
-                boolean checkUsername = checkUsername();
-                if(checkEmail && checkPassword && checkUsername) {
+                boolean isEmailValid = checkEmail();
+                boolean isPasswordValid = checkPassword();
+                boolean isUsernameValid = checkUsername();
+                if (isEmailValid && isPasswordValid && isUsernameValid) {
                     //register user with firebase
                     registerWithFirebase();
                     //send user info into databse
@@ -141,6 +141,7 @@ public class RegistrationFragment extends Fragment {
     /**
      * This method uses a thread to send the user's email and username
      * into a database after the registration.
+     *
      * @throws InterruptedException
      */
     public void sendUserInfoToDatabase() throws InterruptedException {
@@ -166,7 +167,7 @@ public class RegistrationFragment extends Fragment {
             }
 
             conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-            conn.setRequestProperty("Accept","application/json");
+            conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
             conn.setDoInput(true);
             conn.setConnectTimeout(15000);
@@ -174,7 +175,7 @@ public class RegistrationFragment extends Fragment {
 
             JSONObject msg = new JSONObject();
             try {
-                msg.put("Email", email.getText().toString());
+                msg.put("Email", editTextEmail.getText().toString());
                 msg.put("Username", username.getText().toString());
             } catch (JSONException e) {
                 Log.e("JSON ERROR", e.getMessage());
@@ -210,7 +211,6 @@ public class RegistrationFragment extends Fragment {
             }
 
 
-
         });
         thread.start();
         thread.join();
@@ -221,7 +221,7 @@ public class RegistrationFragment extends Fragment {
      * register with Google Firebase.
      */
     public void registerWithFirebase() {
-        String userEmail = email.getText().toString();
+        String userEmail = editTextEmail.getText().toString();
         String userPassword = password.getText().toString();
 
         mAuth.createUserWithEmailAndPassword(userEmail, userPassword)
@@ -246,24 +246,25 @@ public class RegistrationFragment extends Fragment {
 
     /**
      * This method checks the email field to make sure it has a valid input.
+     *
      * @return returns true if the input is valid or false if the input is not valid.
      */
     public boolean checkEmail() {
 
-        String emailStr = email.getText().toString();
+        String emailStr = editTextEmail.getText().toString();
         String emailStr2 = reEnterEmail.getText().toString();
 
-        if(emailStr.length() == 0) {
-            email.setError("Field cannot be empty");
+        if (emailStr.length() == 0) {
+            editTextEmail.setError("Field cannot be empty");
             return false;
         }
 
-        if(!isValid(emailStr)) {
-            email.setError("Enter a valid email address");
+        if (!isValid(emailStr)) {
+            editTextEmail.setError("Enter a valid email address");
             return false;
         }
 
-        if(!emailStr.equals(emailStr2)) {
+        if (!emailStr.equals(emailStr2)) {
             reEnterEmail.setError("Emails must match");
             return false;
         }
@@ -273,6 +274,7 @@ public class RegistrationFragment extends Fragment {
     /**
      * This method checks the password field to make sure it is not empty and contains at least 8
      * characters.
+     *
      * @return returns true if the password is valid and false if the password is not valid.
      */
     public boolean checkPassword() {
@@ -280,15 +282,15 @@ public class RegistrationFragment extends Fragment {
         String passwordStr = password.getText().toString();
         String passwordStr2 = reEnterPassword.getText().toString();
 
-        if(passwordStr.length() == 0) {
+        if (passwordStr.length() == 0) {
             password.setError("Must enter a password");
             return false;
         }
-        if(passwordStr.length() < 8) {
+        if (passwordStr.length() < 8) {
             password.setError("Password must be at least 8 characters");
             return false;
         }
-        if(!passwordStr.equals(passwordStr2)) {
+        if (!passwordStr.equals(passwordStr2)) {
             reEnterPassword.setError("Passwords must match");
             return false;
         }
@@ -298,17 +300,18 @@ public class RegistrationFragment extends Fragment {
 
     /**
      * This method checks if the username is valid.
+     *
      * @return returns true if the username is valid or false is the username is not valid.
      */
     public boolean checkUsername() {
         String userStr = username.getText().toString();
 
-        if(userStr.length() == 0) {
+        if (userStr.length() == 0) {
             username.setError("Field cannot be empty");
             return false;
         }
 
-        if(userStr.length() < 4) {
+        if (userStr.length() < 4) {
             username.setError("Username must be at least 4 characters");
             return false;
         }
@@ -321,7 +324,7 @@ public class RegistrationFragment extends Fragment {
         }
 
         Log.i("READER INFO", "TEST: " + mUsernameExists);
-        if(mUsernameExists) {
+        if (mUsernameExists) {
             username.setError("Username already exists");
         }
 
@@ -331,6 +334,7 @@ public class RegistrationFragment extends Fragment {
     /**
      * This method sends a post request to the web service to check if the username within the
      * username field is already being used.
+     *
      * @throws InterruptedException
      */
     public void checkUsernameInDatabase() throws InterruptedException {
@@ -339,6 +343,7 @@ public class RegistrationFragment extends Fragment {
                 .appendPath("cjkim00-image-sharing-app.herokuapp.com")
                 .appendPath("check_if_username_exists")
                 .build();
+
         Thread thread = new Thread(() -> {
             URL url = null;
             try {
@@ -356,7 +361,7 @@ public class RegistrationFragment extends Fragment {
             }
 
             conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-            conn.setRequestProperty("Accept","application/json");
+            conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
             conn.setDoInput(true);
             conn.setConnectTimeout(15000);
@@ -401,7 +406,6 @@ public class RegistrationFragment extends Fragment {
             }
 
 
-
         });
         thread.start();
         thread.join();
@@ -410,13 +414,14 @@ public class RegistrationFragment extends Fragment {
     /**
      * This method is a helper function for checkUsernameInDatabase() that parses the data returned
      * by the web service.
+     *
      * @param results The data returned by the web service before being parsed.
      * @return Returns the parsed value returned by the web service.
      */
     public boolean getResults(String results) {
         try {
             JSONObject root = new JSONObject(results);
-            if(root.has("success") && root.getBoolean("success")) {
+            if (root.has("success") && root.getBoolean("success")) {
                 JSONArray data = root.getJSONArray("data");
                 JSONObject usernameExists = data.getJSONObject(0);
                 Log.i("READER INFO", "" + usernameExists.getBoolean("exists"));
@@ -432,12 +437,13 @@ public class RegistrationFragment extends Fragment {
 
     /**
      * THis method checks to see if the inputted email is a valid email address.
+     *
      * @param email The inputted email to be checked.
      * @return Returns true if the inputted email is valid or false if the inputted email is not
      * valid.
      */
     public static boolean isValid(String email) {
-        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\."+
+        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\." +
                 "[a-zA-Z0-9_+&*-]+)*@" +
                 "(?:[a-zA-Z0-9-]+\\.)+[a-z" +
                 "A-Z]{2,7}$";
@@ -447,7 +453,6 @@ public class RegistrationFragment extends Fragment {
             return false;
         return pat.matcher(email).matches();
     }
-
 
 
 }
