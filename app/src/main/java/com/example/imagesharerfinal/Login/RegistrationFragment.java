@@ -1,3 +1,19 @@
+/*
+ * Copyright 2022 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.imagesharerfinal.Login;
 
 import android.content.Intent;
@@ -43,6 +59,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
+/**
+ * The RegistrationFragment class handles the registration of the user.
+ */
 
 public class RegistrationFragment extends Fragment {
 
@@ -80,7 +99,7 @@ public class RegistrationFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+
         View view = inflater.inflate(R.layout.fragment_registration, container, false);
 
         email = view.findViewById(R.id.edit_text_registration_email);
@@ -100,7 +119,7 @@ public class RegistrationFragment extends Fragment {
                 boolean checkUsername = checkUsername();
                 if(checkEmail && checkPassword && checkUsername) {
                     //register user with firebase
-                    regisgerWithFirebase();
+                    registerWithFirebase();
                     //send user info into databse
                     try {
                         sendUserInfoToDatabase();
@@ -119,6 +138,11 @@ public class RegistrationFragment extends Fragment {
         return view;
     }
 
+    /**
+     * This method uses a thread to send the user's email and username
+     * into a database after the registration.
+     * @throws InterruptedException
+     */
     public void sendUserInfoToDatabase() throws InterruptedException {
         Uri uri = new Uri.Builder()
                 .scheme("https")
@@ -192,7 +216,11 @@ public class RegistrationFragment extends Fragment {
         thread.join();
     }
 
-    public void regisgerWithFirebase() {
+    /**
+     * This method takes the inputs in the email and password fields and uses them to
+     * register with Google Firebase.
+     */
+    public void registerWithFirebase() {
         String userEmail = email.getText().toString();
         String userPassword = password.getText().toString();
 
@@ -216,6 +244,10 @@ public class RegistrationFragment extends Fragment {
                 });
     }
 
+    /**
+     * This method checks the email field to make sure it has a valid input.
+     * @return returns true if the input is valid or false if the input is not valid.
+     */
     public boolean checkEmail() {
 
         String emailStr = email.getText().toString();
@@ -238,6 +270,11 @@ public class RegistrationFragment extends Fragment {
         return true;
     }
 
+    /**
+     * This method checks the password field to make sure it is not empty and contains at least 8
+     * characters.
+     * @return returns true if the password is valid and false if the password is not valid.
+     */
     public boolean checkPassword() {
 
         String passwordStr = password.getText().toString();
@@ -259,6 +296,10 @@ public class RegistrationFragment extends Fragment {
         return true;
     }
 
+    /**
+     * This method checks if the username is valid.
+     * @return returns true if the username is valid or false is the username is not valid.
+     */
     public boolean checkUsername() {
         String userStr = username.getText().toString();
 
@@ -287,6 +328,11 @@ public class RegistrationFragment extends Fragment {
         return true;
     }
 
+    /**
+     * This method sends a post request to the web service to check if the username within the
+     * username field is already being used.
+     * @throws InterruptedException
+     */
     public void checkUsernameInDatabase() throws InterruptedException {
         Uri uri = new Uri.Builder()
                 .scheme("https")
@@ -337,20 +383,17 @@ public class RegistrationFragment extends Fragment {
             try {
                 int status = conn.getResponseCode();
 
-                switch (status) {
-                    case 200:
-                        BufferedReader bufferedReader =
-                                new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                if (status == 200) {
+                    BufferedReader bufferedReader =
+                            new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
-                        StringBuilder stringBuilder = new StringBuilder();
-                        String line;
-                        while((line = bufferedReader.readLine()) != null) {
-                            stringBuilder.append(line);
-                        }
-                        bufferedReader.close();
-                        mUsernameExists = getResults(stringBuilder.toString());
-
-
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line);
+                    }
+                    bufferedReader.close();
+                    mUsernameExists = getResults(stringBuilder.toString());
                 }
 
             } catch (IOException e) {
@@ -364,6 +407,12 @@ public class RegistrationFragment extends Fragment {
         thread.join();
     }
 
+    /**
+     * This method is a helper function for checkUsernameInDatabase() that parses the data returned
+     * by the web service.
+     * @param results The data returned by the web service before being parsed.
+     * @return Returns the parsed value returned by the web service.
+     */
     public boolean getResults(String results) {
         try {
             JSONObject root = new JSONObject(results);
@@ -381,7 +430,12 @@ public class RegistrationFragment extends Fragment {
     }
 
 
-
+    /**
+     * THis method checks to see if the inputted email is a valid email address.
+     * @param email The inputted email to be checked.
+     * @return Returns true if the inputted email is valid or false if the inputted email is not
+     * valid.
+     */
     public static boolean isValid(String email) {
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\."+
                 "[a-zA-Z0-9_+&*-]+)*@" +
