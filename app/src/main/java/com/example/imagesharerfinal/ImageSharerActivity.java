@@ -31,9 +31,20 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Calendar;
+import java.util.Random;
 
 public class ImageSharerActivity extends AppCompatActivity {
 
@@ -121,8 +132,21 @@ public class ImageSharerActivity extends AppCompatActivity {
                                     this.getContentResolver(),
                                     selectedImageUri);
 
+
+                            Random rand = new Random();
+                            String randomNumber = "";
+                            for(int i = 0; i < 15; i++) {
+                                randomNumber = randomNumber + String.valueOf(rand.nextInt(9));
+                            }
+
+                            String uploadTime = Calendar.getInstance().getTime().toString();
+
+                            String newFileName = uploadTime + randomNumber;
+
                             Uri file = Uri.fromFile(new File(selectedImageUri.toString()));
-                            StorageReference imageReference = storageReference.child(selectedImageUri.toString());
+                            //StorageReference imageReference = storageReference.child(selectedImageUri.toString());
+
+                            StorageReference imageReference = storageReference.child(newFileName);
 
 
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -131,7 +155,7 @@ public class ImageSharerActivity extends AppCompatActivity {
                             UploadTask uploadTask = imageReference.putBytes(data2);
                             uploadTask = imageReference.putFile(file);
 
-// Register observers to listen for when the download is done or if it fails
+                            // Register observers to listen for when the download is done or if it fails
                             uploadTask.addOnFailureListener(new OnFailureListener() {
                                 @Override
                                 public void onFailure(@NonNull Exception exception) {
@@ -142,8 +166,14 @@ public class ImageSharerActivity extends AppCompatActivity {
                                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                                     // taskSnapshot.getMetadata() contains file metadata such as size, content-type, etc.
                                     // ...
+
                                 }
                             });
+                            try {
+                                sendPostInfoToDatabase(newFileName);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
 
                         }
                         catch (IOException e) {
@@ -158,5 +188,80 @@ public class ImageSharerActivity extends AppCompatActivity {
                     }
                 }
             });
+
+    public void sendPostInfoToDatabase(String postLocation) throws InterruptedException {
+        Uri uri = new Uri.Builder()
+                .scheme("https")
+                .appendPath("cjkim00-image-sharing-app.herokuapp.com")
+                .appendPath("InsertPost")
+                .build();
+        Thread thread = new Thread(() -> {
+            URL url = null;
+            try {
+                url = new URL(uri.toString());
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+
+            JSONObject msg = new JSONObject();
+            try {
+                msg.put("PostLocation", postLocation);
+                msg.put("Email", "Test Email");
+                msg.put("Description", "Test Description");
+                msg.put("Likes", "0");
+                msg.put("Views", "0");
+            } catch (JSONException e) {
+                Log.e("JSON ERROR", e.getMessage());
+            }
+
+            DataOutputStream os = null;
+            try {
+                os = new DataOutputStream(conn.getOutputStream());
+                os.writeBytes(msg.toString());
+                os.flush();
+                os.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            try {
+                int status = conn.getResponseCode();
+
+                if (status == 200) {
+                    BufferedReader bufferedReader =
+                            new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line);
+                    }
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+        });
+        thread.start();
+        thread.join();
+    }
 
 }
