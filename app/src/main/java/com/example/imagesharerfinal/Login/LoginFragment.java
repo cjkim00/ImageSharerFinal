@@ -1,6 +1,7 @@
 package com.example.imagesharerfinal.Login;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,17 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
@@ -31,9 +43,17 @@ import java.util.regex.Pattern;
 public class LoginFragment extends Fragment {
 
     private FirebaseAuth mAuth;
+    private String mEmail;
+    private String mUsername;
+    private String mDescription;
+    private String mImageLocation;
+    private int mFollowing;
+    private int mFollowers;
 
     EditText editTextEmail;
     EditText editTextPassword;
+
+
 
     public LoginFragment() {
         // Required empty public constructor
@@ -106,8 +126,25 @@ public class LoginFragment extends Fragment {
                             FirebaseUser user = mAuth.getCurrentUser();
                             //start image sharing activity
 
-                            Intent intent = new Intent(getActivity(), ImageSharerActivity.class);
-                            startActivity(intent);
+
+                            try {
+                                getUserInfoFromDatabase();
+
+                                Intent intent = new Intent(getActivity(), ImageSharerActivity.class);
+                                intent.putExtra("Email", mEmail);
+                                intent.putExtra("Username", mUsername);
+                                intent.putExtra("Description", mDescription);
+                                intent.putExtra("ProfileImageLocation", mImageLocation);
+                                intent.putExtra("Following", mFollowing);
+                                intent.putExtra("Followers", mFollowers);
+
+                                Log.i("DatabaseCheck", "TEST2: " + mEmail + " " + mUsername + " " + mDescription + " " + mImageLocation + " "  + mFollowing + " " + mFollowers);
+
+                                startActivity(intent);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+
                         } else {
                             // If sign in fails, display a message to the user.
                             Toast.makeText(getActivity(), "Authentication failed.",
@@ -150,6 +187,102 @@ public class LoginFragment extends Fragment {
         }
 
         return true;
+    }
+
+    public void getUserInfoFromDatabase() throws InterruptedException {
+        Uri uri = new Uri.Builder()
+                .scheme("https")
+                .appendPath("cjkim00-image-sharing-app.herokuapp.com")
+                .appendPath("get_user_info")
+                .build();
+
+        Thread thread = new Thread(() -> {
+            URL url = null;
+            try {
+                url = new URL(uri.toString());
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+
+            JSONObject msg = new JSONObject();
+            try {
+                msg.put("User", editTextEmail.getText().toString());
+            } catch (JSONException e) {
+                Log.e("JSON ERROR", e.getMessage());
+            }
+
+            DataOutputStream os = null;
+            try {
+                os = new DataOutputStream(conn.getOutputStream());
+                os.writeBytes(msg.toString());
+                os.flush();
+                os.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+            try {
+                int status = conn.getResponseCode();
+
+                if (status == 200) {
+                    BufferedReader bufferedReader =
+                            new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        stringBuilder.append(line);
+                    }
+                    bufferedReader.close();
+                    Log.i("DatabaseCheck", "TEST");
+                    getResults(stringBuilder.toString());
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+        });
+        thread.start();
+        thread.join();
+    }
+
+    public void getResults(String results) {
+        try {
+            JSONObject root = new JSONObject(results);
+            if (root.has("success") && root.getBoolean("success")) {
+                JSONArray data = root.getJSONArray("data");
+                JSONObject userData = data.getJSONObject(0);
+                mEmail = userData.getString("email");
+                mUsername = userData.getString("username");
+                mDescription = userData.getString("profiledescription");
+                mImageLocation = userData.getString("profileimagelocation");
+                mFollowing = userData.getInt("followingtotal");
+                mFollowers = userData.getInt("followerstotal");
+                Log.i("DatabaseCheck", "TEST: " + mEmail + " " + mUsername + " " + mDescription + " " + mImageLocation + " "  + mFollowing + " " + mFollowers);
+                //return usernameExists.getBoolean("exists");
+            }
+        } catch (JSONException e) {
+
+        }
+        //return false;
     }
 
     /**

@@ -3,17 +3,18 @@ package com.example.imagesharerfinal;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
-import android.widget.Toast;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -54,6 +55,13 @@ public class ImageSharerActivity extends AppCompatActivity {
     FirebaseStorage firebaseStorage;
     StorageReference storageReference;
 
+    private String mEmail;
+    private String mUsername;
+    private String mDescription;
+    private String mImageLocation;
+    private int mFollowing;
+    private int mFollowers;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -68,6 +76,7 @@ public class ImageSharerActivity extends AppCompatActivity {
                 openPhotoPicker();
             }
         });
+
         DrawerLayout drawer = binding.drawerLayout;
         NavigationView navigationView = binding.navView;
         // Passing each menu ID as a set of Ids because each
@@ -82,6 +91,54 @@ public class ImageSharerActivity extends AppCompatActivity {
 
         firebaseStorage = FirebaseStorage.getInstance();
         storageReference = firebaseStorage.getReference();
+
+        Intent intent = getIntent();
+
+        mEmail = intent.getStringExtra("Email");
+        mUsername = intent.getStringExtra("Username");
+        mDescription = intent.getStringExtra("Description");
+        mImageLocation = intent.getStringExtra("ProfileImageLocation");
+
+        mFollowing = intent.getIntExtra("Following", -1);
+        mFollowers = intent.getIntExtra("Followers", -1);
+
+        Log.i("DatabaseCheck", "TEST3: " + mEmail + " " + mUsername + " " + mDescription + " " + mImageLocation + " "  + mFollowing + " " + mFollowers);
+
+
+        //change fields in nav view
+        View headerView = navigationView.getHeaderView(0);
+
+        TextView emailView = headerView.findViewById(R.id.textView_email_nav_header);
+        emailView.setText(mEmail);
+
+        TextView usernameView = headerView.findViewById(R.id.textView_username_nav_header);
+        usernameView.setText(mUsername);
+
+        //set profile picture
+        ImageView profilePicture = headerView.findViewById(R.id.imageView_profile_image_nav_header);
+
+        StorageReference profilePictureRef = storageReference.child(mImageLocation);
+        final long ONE_MEGABYTE = 1024 * 1024;
+        profilePictureRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(new OnSuccessListener<byte[]>() {
+            @Override
+            public void onSuccess(byte[] bytes) {
+                // Data for "images/island.jpg" is returns, use this as needed
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                profilePicture.setImageBitmap(bitmap);
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception exception) {
+                // Handle any errors
+            }
+        });
+
+
+
+
+
+
+
 
     }
 
@@ -188,6 +245,10 @@ public class ImageSharerActivity extends AppCompatActivity {
                     }
                 }
             });
+
+    public void setProfileImage(String imageLocation) {
+
+    }
 
     public void sendPostInfoToDatabase(String postLocation) throws InterruptedException {
         Uri uri = new Uri.Builder()
