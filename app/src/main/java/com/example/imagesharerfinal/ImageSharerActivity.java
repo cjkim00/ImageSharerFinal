@@ -4,15 +4,21 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Menu;
+import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 
+
+import com.example.imagesharerfinal.ui.profile.ProfileFragment;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.navigation.NavigationView;
@@ -20,6 +26,11 @@ import com.google.android.material.navigation.NavigationView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -45,15 +56,20 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Calendar;
+import java.util.Objects;
 import java.util.Random;
 
-public class ImageSharerActivity extends AppCompatActivity {
+public class ImageSharerActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityImageSharerBinding binding;
 
     FirebaseStorage firebaseStorage;
     StorageReference storageReference;
+
+    ImageView profilePicture;
+
+    DrawerLayout drawer;
 
     private String mEmail;
     private String mUsername;
@@ -77,17 +93,30 @@ public class ImageSharerActivity extends AppCompatActivity {
             }
         });
 
-        DrawerLayout drawer = binding.drawerLayout;
+        drawer = binding.drawerLayout;
         NavigationView navigationView = binding.navView;
+
+
+
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow)
+                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow, R.id.nav_profile)
                 .setOpenableLayout(drawer)
                 .build();
+        /*
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_image_sharer);
-        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-        NavigationUI.setupWithNavController(navigationView, navController);
+        NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration); //controls the menu itself
+        NavigationUI.setupWithNavController(navigationView, navController);//controls the swaping of fragment
+        */
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+
+        navigationView.setNavigationItemSelectedListener(this);
 
         firebaseStorage = FirebaseStorage.getInstance();
         storageReference = firebaseStorage.getReference();
@@ -102,6 +131,7 @@ public class ImageSharerActivity extends AppCompatActivity {
         mFollowing = intent.getIntExtra("Following", -1);
         mFollowers = intent.getIntExtra("Followers", -1);
 
+
         Log.i("DatabaseCheck", "TEST3: " + mEmail + " " + mUsername + " " + mDescription + " " + mImageLocation + " "  + mFollowing + " " + mFollowers);
 
 
@@ -115,7 +145,7 @@ public class ImageSharerActivity extends AppCompatActivity {
         usernameView.setText(mUsername);
 
         //set profile picture
-        ImageView profilePicture = headerView.findViewById(R.id.imageView_profile_image_nav_header);
+        profilePicture = headerView.findViewById(R.id.imageView_profile_image_nav_header);
 
         StorageReference profilePictureRef = storageReference.child(mImageLocation);
         final long ONE_MEGABYTE = 1024 * 1024;
@@ -129,7 +159,7 @@ public class ImageSharerActivity extends AppCompatActivity {
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
-                // Handle any errors
+                //TODO: set profile picture as default
             }
         });
 
@@ -162,15 +192,11 @@ public class ImageSharerActivity extends AppCompatActivity {
         Intent intent = new Intent();
         intent.setType("image/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
-
-
-
-
-        launchSomeActivity.launch(intent);
+        launchActivity.launch(intent);
 
     }
 
-    ActivityResultLauncher<Intent> launchSomeActivity
+    ActivityResultLauncher<Intent> launchActivity
             = registerForActivityResult(
             new ActivityResultContracts
                     .StartActivityForResult(),
@@ -246,8 +272,34 @@ public class ImageSharerActivity extends AppCompatActivity {
                 }
             });
 
-    public void setProfileImage(String imageLocation) {
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        Log.i("SELECTED", "SELECTED: " + item.toString());
+        if(item.toString().equals("Profile")) {
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) profilePicture.getDrawable();
+            Bitmap bitmap = bitmapDrawable.getBitmap();
 
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+
+            byte[] imageByteArray = byteArrayOutputStream.toByteArray();
+
+            Bundle bundle = new Bundle();
+            bundle.putByteArray("profile", imageByteArray);
+            bundle.putString("username", mUsername);
+            bundle.putString("description", mDescription);
+            bundle.putInt("followers", mFollowers);
+            bundle.putInt("Following", mFollowing);
+            Log.i("profileImage", "LENGTH: " + imageByteArray.length);
+
+            ProfileFragment profileFragment = new ProfileFragment();
+            profileFragment.setArguments(bundle);
+
+            replaceFragment(profileFragment);
+            drawer.closeDrawers();
+
+        }
+        return true;
     }
 
     public void sendPostInfoToDatabase(String postLocation) throws InterruptedException {
@@ -323,6 +375,15 @@ public class ImageSharerActivity extends AppCompatActivity {
         });
         thread.start();
         thread.join();
+    }
+
+    public void replaceFragment(Fragment fragment) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = Objects.requireNonNull(fragmentManager)
+                .beginTransaction();
+        fragmentTransaction.replace(R.id.layout_activity_layout_content_image_sharer, fragment);
+        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        fragmentTransaction.commit();
     }
 
 }
