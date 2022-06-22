@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 
 import com.example.imagesharerfinal.ui.profile.ProfileFragment;
+import com.example.imagesharerfinal.ui.search.SearchFragment;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.navigation.NavigationView;
@@ -101,7 +102,7 @@ public class ImageSharerActivity extends AppCompatActivity implements Navigation
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow, R.id.nav_profile)
+                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow, R.id.nav_profile, R.id.nav_search)
                 .setOpenableLayout(drawer)
                 .build();
         /*
@@ -276,21 +277,22 @@ public class ImageSharerActivity extends AppCompatActivity implements Navigation
     public boolean onNavigationItemSelected(MenuItem item) {
         Log.i("SELECTED", "SELECTED: " + item.toString());
         if(item.toString().equals("Profile")) {
-            BitmapDrawable bitmapDrawable = (BitmapDrawable) profilePicture.getDrawable();
-            Bitmap bitmap = bitmapDrawable.getBitmap();
+            //BitmapDrawable bitmapDrawable = (BitmapDrawable) profilePicture.getDrawable();
+            //Bitmap bitmap = bitmapDrawable.getBitmap();
 
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
+            //ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            //bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream);
 
-            byte[] imageByteArray = byteArrayOutputStream.toByteArray();
+            //byte[] imageByteArray = byteArrayOutputStream.toByteArray();
 
             Bundle bundle = new Bundle();
-            bundle.putByteArray("profile", imageByteArray);
+            //bundle.putByteArray("profile", imageByteArray);
             bundle.putString("username", mUsername);
             bundle.putString("description", mDescription);
             bundle.putInt("followers", mFollowers);
             bundle.putInt("Following", mFollowing);
-            Log.i("profileImage", "LENGTH: " + imageByteArray.length);
+            //Log.i("profileImage", "LENGTH: " + imageByteArray.length);
+            //TODO: add image location to bundle (might have to send image location from the main activity)
 
             ProfileFragment profileFragment = new ProfileFragment();
             profileFragment.setArguments(bundle);
@@ -299,6 +301,12 @@ public class ImageSharerActivity extends AppCompatActivity implements Navigation
             drawer.closeDrawers();
 
         }
+
+        if(item.toString().equals("Search")) {
+            replaceFragment(new SearchFragment());
+        }
+
+
         return true;
     }
 

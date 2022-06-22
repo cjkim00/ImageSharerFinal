@@ -8,6 +8,14 @@ public class Profile {
     private int mFollowing;
     private int mFollowers;
 
+    public Profile() {
+        mUsername = "EMPTY";
+        mDescription = "EMPTY";
+        mImageLocation = "EMPTY";
+        mFollowing = -1;
+        mFollowers = -1;
+    }
+
     public Profile(String username, String description, String imageLocation, int following, int followers) {
         mUsername = username;
         mDescription = description;

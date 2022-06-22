@@ -8,7 +8,7 @@
     tools:context=".ui.search.SearchFragment" >
 
     <EditText
-        android:id="@+id/PlainText_Search_Bar_Fragment_Search"
+        android:id="@+id/plainText_search_bar_fragment_search"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -37,6 +37,6 @@
         android:layout_height="673dp"
         android:layout_marginTop="16dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/PlainText_Search_Bar_Fragment_Search" />
+        app:layout_constraintTop_toBottomOf="@+id/plainText_search_bar_fragment_search" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

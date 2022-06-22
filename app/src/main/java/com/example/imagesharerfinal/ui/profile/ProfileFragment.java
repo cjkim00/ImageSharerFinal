@@ -77,7 +77,7 @@ public class ProfileFragment extends Fragment {
 
         Bundle bundle = getArguments();
 
-        byte[] imageByteArray = bundle.getByteArray("profile");
+        //byte[] imageByteArray = bundle.getByteArray("profile");
 
         String usernameStr = bundle.getString("username");
         String descriptionStr = bundle.getString("description");
@@ -90,8 +90,10 @@ public class ProfileFragment extends Fragment {
         followers.setText("Followers: " + String.valueOf(followersInt));
         following.setText("Following: " + String.valueOf(followingInt));
 
-        Bitmap bitmap = BitmapFactory.decodeByteArray(imageByteArray, 0, imageByteArray.length);
-        profilePicture.setImageBitmap(bitmap);
+        //TODO: get image from firebase storage and display it
+
+        //Bitmap bitmap = BitmapFactory.decodeByteArray(imageByteArray, 0, imageByteArray.length);
+        //profilePicture.setImageBitmap(bitmap);
 
         Button editButton = view.findViewById(R.id.button_edit_profile_fragment_profile);
         editButton.setOnClickListener(new View.OnClickListener() {
