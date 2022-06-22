@@ -7,11 +7,14 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -19,6 +22,8 @@ import com.example.imagesharerfinal.ImageSharerActivity;
 import com.example.imagesharerfinal.R;
 
 import org.w3c.dom.Text;
+
+import java.util.Objects;
 
 
 public class ProfileFragment extends Fragment {
@@ -88,6 +93,28 @@ public class ProfileFragment extends Fragment {
         Bitmap bitmap = BitmapFactory.decodeByteArray(imageByteArray, 0, imageByteArray.length);
         profilePicture.setImageBitmap(bitmap);
 
+        Button editButton = view.findViewById(R.id.button_edit_profile_fragment_profile);
+        editButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+            }
+        });
+
+
+        //TODO: add edit profile functionality
+
         return view;
+    }
+
+    private void replaceFragment(Fragment fragment) {
+        FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = Objects.requireNonNull(fragmentManager)
+                .beginTransaction();
+        fragmentTransaction.replace(((ViewGroup) (requireView().getParent()))
+                .getId(), fragment);
+        fragmentTransaction.addToBackStack(fragment.toString());
+        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+        fragmentTransaction.commit();
     }
 }

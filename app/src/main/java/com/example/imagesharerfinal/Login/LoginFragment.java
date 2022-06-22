@@ -189,6 +189,10 @@ public class LoginFragment extends Fragment {
         return true;
     }
 
+    /**
+     * This method gets the user's information from the backend database.
+     * @throws InterruptedException
+     */
     public void getUserInfoFromDatabase() throws InterruptedException {
         Uri uri = new Uri.Builder()
                 .scheme("https")
@@ -264,6 +268,11 @@ public class LoginFragment extends Fragment {
         thread.join();
     }
 
+    /**
+     * A helper function to getUserInfoFromDatabase() which parses the information given from
+     * the web service and set's the appropriate variable's values.
+     * @param results the results given by the backend web service.
+     */
     public void getResults(String results) {
         try {
             JSONObject root = new JSONObject(results);
