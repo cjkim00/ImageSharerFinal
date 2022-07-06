@@ -32,7 +32,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/RecyclerView_Search_List_Fragment_Search"
+        android:id="@+id/recyclerView_search_list_fragment_search"
         android:layout_width="409dp"
         android:layout_height="673dp"
         android:layout_marginTop="16dp"

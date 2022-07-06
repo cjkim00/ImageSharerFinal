@@ -16,6 +16,7 @@ public class Profile {
         mFollowers = -1;
     }
 
+
     public Profile(String username, String description, String imageLocation, int following, int followers) {
         mUsername = username;
         mDescription = description;

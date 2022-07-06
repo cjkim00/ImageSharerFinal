@@ -4,6 +4,8 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,7 +31,13 @@ import java.net.URL;
 
 public class SearchFragment extends Fragment {
 
+    protected Profile[] mProfiles;
+    protected RecyclerView mRecyclerView;
+    protected RecyclerView.LayoutManager mLayoutManager;
+    protected SearchRecyclerViewAdapter mAdapter;
+
     TextView searchText;
+
 
     public SearchFragment() {
         // Required empty public constructor
@@ -39,6 +47,8 @@ public class SearchFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        initDataSet();
 
     }
 
@@ -67,7 +77,29 @@ public class SearchFragment extends Fragment {
             }
         });
 
+        //initialize the recyclerview
+        mRecyclerView = view.findViewById(R.id.recyclerView_search_list_fragment_search);
+
+        mLayoutManager = new LinearLayoutManager(getActivity());
+
+        mRecyclerView.setLayoutManager(mLayoutManager);
+        mRecyclerView.scrollToPosition(0);
+
+
+        mAdapter = new SearchRecyclerViewAdapter(mProfiles);
+        mRecyclerView.setAdapter(mAdapter);
+
+
         return view;
+    }
+
+    public void initDataSet() {
+        //TODO:initialize data set with data from the database
+        mProfiles = new Profile[50];
+        for(int i = 0; i < 50; i++) {
+            Profile tempProfile = new Profile("Username" + i, "", "", -1, -1);
+            mProfiles[i] = tempProfile;
+        }
     }
 
     public void searchDatabase(String text) throws InterruptedException {
